@@ -1,13 +1,14 @@
-import { Component, ReactNode, Ref, } from 'react';
+import { Component, ReactNode, Ref } from 'react';
 // import React from 'react';
 // import PropTypes from 'prop-types';
-import {TextInput} from 'react-native'
+import { Keyboard } from 'react-native';
 // import KeyboardAwareView from '../KeyboardAwareView';
 import mapValues from 'lodash/mapValues';
+import { TextInput } from 'react-native';
 // import styles from './Form.style';
 // import { validateField } from '../../utils';
 
-// export const hasErrors = errors => !!Object.keys(errors).length;
+export const hasErrors = (errors: FormErrors) => !!Object.keys(errors).length;
 
 export type FormError = string | null;
 
@@ -43,7 +44,7 @@ export type FormConfig = {
 
 export type FormProps = {
   config: FormConfig;
-  onSubmitEditingLast?: (form: FormInstance) => void;
+  onSubmitEditingLast: (form: FormInstance) => void;
   children: (form: FormInstance) => ReactNode;
 };
 
@@ -56,11 +57,11 @@ export interface TextInputProps {
   onBlur: () => void;
   onChangeText: (value: FormValue) => void;
   onSubmitEditing: () => void;
-  ref: () => void;
+  ref: (input: TextInput) => void;
 }
 
 export class Form extends Component<FormProps, FormState> {
-  inputRefs: TextInput[];
+  inputRefs: { name: string; input: TextInput }[];
 
   constructor(props: FormProps) {
     super(props);
@@ -79,29 +80,31 @@ export class Form extends Component<FormProps, FormState> {
     // if (!error && validate) {
     //   error = validate({ value, label, required, type });
     // }
+    return '';
     // return error;
   };
-  // getErrors = () => {
-  //   let errors = {};
-  //   let name;
-  //   for (name in this.state.values) {
-  //     const error = this.validate(name);
-  //     if (error) {
-  //       errors[name] = error;
-  //     }
-  //   }
-  //   return hasErrors(errors) ? errors : false;
-  // };
-  // setErrors = errors => {
-  //   this.setState({ errors });
-  // };
-  // renderErrors = () => {
-  //   const errors = this.getErrors();
-  //   if (errors) {
-  //     this.setErrors(errors);
-  //   }
-  //   return errors;
-  // };
+  getErrors = () => {
+    const errors: FormErrors = {};
+
+    Object.keys(this.state.values).forEach((name: string) => {
+      const error = this.validate(name);
+      if (error) {
+        errors[name] = error;
+      }
+    });
+
+    return hasErrors(errors) ? errors : false;
+  };
+  setErrors = (errors: FormErrors) => {
+    this.setState({ errors });
+  };
+  renderErrors = () => {
+    const errors = this.getErrors();
+    if (errors) {
+      this.setErrors(errors);
+    }
+    return errors;
+  };
   onFocus = (name: string) => () => {
     const { errors } = this.state;
     if (errors[name]) {
@@ -136,29 +139,30 @@ export class Form extends Component<FormProps, FormState> {
     const nextRef = this.inputRefs[currIndex + 1];
     if (nextRef) {
       try {
-        nextRef.focus();
+        nextRef.input.focus();
       } catch (error) {
-        console.error(error);
+        console.warn(error);
       }
     } else {
       Keyboard.dismiss();
       this.props.onSubmitEditingLast(this.getForm());
     }
   };
-  // /**
-  //  * Refs get pushed to the queue in the order that they are rendererd (top to bottom)
-  //  */
-  // handleRef = name => input => {
-  //   if (!input) {
-  //     return;
-  //   }
-  //   if (this.findRefIndex(name) === -1) {
-  //     this.inputRefs.push({
-  //       name,
-  //       input: input.input,
-  //     });
-  //   }
-  // };
+
+  /**
+   * Refs get pushed to the queue in the order that they are rendererd (top to bottom)
+   */
+  handleRef = (name: string) => (input: TextInput) => {
+    if (!input) {
+      return;
+    }
+    if (this.findRefIndex(name) === -1) {
+      this.inputRefs.push({
+        name,
+        input,
+      });
+    }
+  };
 
   findRefIndex = (name: string) => {
     return this.inputRefs.findIndex((ref) => ref.name === name);
@@ -176,37 +180,29 @@ export class Form extends Component<FormProps, FormState> {
       onBlur: this.onBlur(name),
       onChangeText: this.onChangeText(name),
       onSubmitEditing: this.onSubmitEditing(name),
-      // ref: this.handleRef(name),
+      ref: this.handleRef(name),
     };
   };
 
-  // getValues = () => this.state.values;
-  getForm = () => {
-    const {
-      getTextInputProps,
-      // getValues,
-      // setErrors,
-      // getErrors,
-      // renderErrors,
-    } = this;
-    // const { errors } = this.state;
-    // const isInvalid = !!getErrors();
+  getValues = (): FormValues => this.state.values;
 
-    const errors = {};
+  getForm = () => {
+    const { getTextInputProps, getValues, setErrors, getErrors, renderErrors } = this;
+    const { errors } = this.state;
+    const isInvalid = !!getErrors();
 
     return {
       getTextInputProps,
-      // getValues,
-      // setErrors,
-      // getErrors,
-      // renderErrors,
+      getValues,
+      setErrors,
+      getErrors,
+      renderErrors,
       errors,
-      // isInvalid,
+      isInvalid,
     };
   };
 
   render() {
-    // const { children } = this.props;
     const form = this.getForm();
     return this.props.children(form);
   }
