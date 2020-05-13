@@ -1,10 +1,17 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TextInput } from 'react-native';
+import * as F from '../src/index.tsx';
+
+console.log(F);
+
+// const formConfig: FormCon;
 
 export default function App() {
+  const [value, setValue] = useState('hello world');
+
   return (
     <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
+      <TextInput value={value} onChangeText={setValue} />
     </View>
   );
 }
